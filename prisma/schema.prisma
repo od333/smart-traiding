@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Sentiment {
+  bullish
+  bearish
+  neutral
+}
+
+enum ImpactLevel {
+  high
+  medium
+  low
+}
+
+enum NewsCategory {
+  earnings
+  guidance
+  analyst_action
+  macro
+  ai
+  regulation
+  lawsuit
+  product_launch
+  acquisition
+  market_wide
+  other
+}
+
+model NewsItem {
+  id               String      @id @default(cuid())
+  source           String
+  title            String
+  summary          String
+  arabicSummary    String
+  actionNote       String
+  url              String
+  publishedAt      DateTime
+  symbol           String
+  rawCategory      String
+  detectedCategory NewsCategory
+  sentiment        Sentiment
+  impactLevel      ImpactLevel
+  impactScore      Int
+  urgencyScore     Int
+  dedupeHash       String
+  sentToTelegram   Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  alerts           NewsAlertLog[]
+
+  @@index([symbol, publishedAt])
+  @@index([detectedCategory, publishedAt])
+  @@index([dedupeHash])
+}
+
+model NewsAlertLog {
+  id          String   @id @default(cuid())
+  newsItemId  String
+  status      String
+  error       String?
+  attempt     Int      @default(1)
+  payload     String
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+
+  newsItem    NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+
+  @@index([newsItemId, createdAt])
+}
+
+model WatchlistSymbol {
+  id         String   @id @default(cuid())
+  symbol     String   @unique
+  enabled    Boolean  @default(true)
+  marketWide Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model NewsEngineState {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
